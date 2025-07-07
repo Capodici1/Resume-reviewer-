@@ -1,0 +1,1055 @@
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, ChevronDown, CheckCircle, XCircle, AlertTriangle, Calculator, FileText, Users, Target, TrendingUp, Download, Upload, Save } from 'lucide-react';
+
+const RecruitmentEvaluationApp = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [jobData, setJobData] = useState({
+    description: '',
+    notes: '',
+    title: ''
+  });
+  const [binaryFilters, setBinaryFilters] = useState([]);
+  const [evaluationCriteria, setEvaluationCriteria] = useState([]);
+  const [candidateData, setCandidateData] = useState({
+    name: '',
+    currentTitle: '',
+    resume: ''
+  });
+  const [binaryResults, setBinaryResults] = useState({});
+  const [scores, setScores] = useState({});
+  const [finalEvaluation, setFinalEvaluation] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({});
+
+  // Sample data for demonstration
+  const sampleJobDescription = `Senior Software Engineering Manager
+  
+We are seeking an experienced Senior Software Engineering Manager to lead our platform engineering team of 12+ engineers. This role requires a technical leader who can drive architectural decisions while managing and mentoring a diverse team.
+
+Key Requirements:
+• Minimum 8 years of software development experience
+• 4+ years in engineering management roles
+• Strong background in cloud platforms (AWS/Azure)
+• Experience with microservices architecture
+• Bachelor's degree in Computer Science or related field
+• PMP or equivalent project management certification preferred
+• Must be authorized to work in the US
+
+Responsibilities:
+• Lead cross-functional initiatives across engineering, product, and design
+• Drive technical architecture decisions for scalable systems
+• Manage engineering budgets up to $2M annually
+• Implement DevOps best practices and CI/CD pipelines
+• Mentor senior engineers and establish career development programs
+• Collaborate with C-level executives on technology strategy`;
+
+  const sampleNotes = `Kickoff Notes:
+- Critical: Must have hands-on experience with Kubernetes and Docker
+- Team is transitioning from monolith to microservices
+- Need someone who can handle both technical and people leadership
+- Salary range: $180K-220K + equity
+- Remote work available, but prefer someone in PST timezone`;
+
+  // Step navigation
+  const steps = [
+    { id: 1, title: 'Job Setup', icon: FileText },
+    { id: 2, title: 'Generate Framework', icon: Target },
+    { id: 3, title: 'Candidate Input', icon: Users },
+    { id: 4, title: 'Binary Evaluation', icon: CheckCircle },
+    { id: 5, title: 'Detailed Scoring', icon: Calculator },
+    { id: 6, title: 'Final Report', icon: TrendingUp }
+  ];
+
+  // Generate binary filters and criteria (simulated AI call)
+  const generateEvaluationFramework = async () => {
+    setIsLoading(true);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Generate binary filters
+    const generatedFilters = [
+      {
+        id: 1,
+        criterion: "Minimum 8 years of software development experience",
+        source: "Key Requirements section",
+        type: "experience"
+      },
+      {
+        id: 2,
+        criterion: "4+ years in engineering management roles",
+        source: "Key Requirements section",
+        type: "experience"
+      },
+      {
+        id: 3,
+        criterion: "Bachelor's degree in Computer Science or related field",
+        source: "Key Requirements section",
+        type: "education"
+      },
+      {
+        id: 4,
+        criterion: "Must be authorized to work in the US",
+        source: "Key Requirements section",
+        type: "authorization"
+      },
+      {
+        id: 5,
+        criterion: "Hands-on experience with Kubernetes and Docker",
+        source: "Kickoff notes - marked as critical",
+        type: "technical"
+      }
+    ];
+
+    // Generate weighted criteria
+    const generatedCriteria = [
+      {
+        id: 1,
+        name: "Engineering Team Leadership & Management",
+        weight: 20,
+        description: "Leading and mentoring engineering teams of 10+ people",
+        source: "lead our platform engineering team of 12+ engineers"
+      },
+      {
+        id: 2,
+        name: "Cloud Architecture & Microservices Design",
+        weight: 18,
+        description: "Designing scalable cloud-native architectures",
+        source: "cloud platforms (AWS/Azure), microservices architecture"
+      },
+      {
+        id: 3,
+        name: "Cross-Functional Technical Leadership",
+        weight: 15,
+        description: "Leading technical initiatives across multiple departments",
+        source: "Lead cross-functional initiatives across engineering, product, and design"
+      },
+      {
+        id: 4,
+        name: "DevOps & CI/CD Implementation",
+        weight: 12,
+        description: "Implementing and managing DevOps practices and pipelines",
+        source: "Implement DevOps best practices and CI/CD pipelines"
+      },
+      {
+        id: 5,
+        name: "Budget Management & Resource Planning",
+        weight: 10,
+        description: "Managing large engineering budgets and resource allocation",
+        source: "Manage engineering budgets up to $2M annually"
+      },
+      {
+        id: 6,
+        name: "Strategic Technology Vision",
+        weight: 8,
+        description: "Contributing to C-level technology strategy decisions",
+        source: "Collaborate with C-level executives on technology strategy"
+      },
+      {
+        id: 7,
+        name: "Mentorship & Career Development",
+        weight: 7,
+        description: "Developing senior engineers and career progression programs",
+        source: "Mentor senior engineers and establish career development programs"
+      },
+      {
+        id: 8,
+        name: "Container Orchestration (K8s/Docker)",
+        weight: 5,
+        description: "Deep hands-on experience with containerization technologies",
+        source: "Critical: Must have hands-on experience with Kubernetes and Docker"
+      },
+      {
+        id: 9,
+        name: "Monolith to Microservices Migration",
+        weight: 3,
+        description: "Experience leading architectural transformation projects",
+        source: "Team is transitioning from monolith to microservices"
+      },
+      {
+        id: 10,
+        name: "Remote Team Management",
+        weight: 2,
+        description: "Managing distributed teams across time zones",
+        source: "Remote work available, but prefer someone in PST timezone"
+      }
+    ];
+
+    setBinaryFilters(generatedFilters);
+    setEvaluationCriteria(generatedCriteria);
+    setIsLoading(false);
+    setCurrentStep(3);
+  };
+
+  // Evaluate binary filters
+  const evaluateBinaryFilters = (resume, candidateName) => {
+    const results = {};
+    let allPassed = true;
+
+    binaryFilters.forEach(filter => {
+      let passed = false;
+      let evidence = "Not found in resume";
+      
+      // Simple keyword matching simulation
+      const resumeLower = resume.toLowerCase();
+      
+      switch(filter.id) {
+        case 1: // 8+ years software dev
+          const expMatch = resume.match(/(\d+)\s*\+?\s*years?.*software|software.*(\d+)\s*\+?\s*years?/i);
+          if (expMatch) {
+            const years = parseInt(expMatch[1] || expMatch[2]);
+            passed = years >= 8;
+            evidence = passed ? `${years} years of software development found` : `Only ${years} years found, need 8+`;
+          }
+          break;
+        case 2: // 4+ years management
+          if (resumeLower.includes('engineering manager') || resumeLower.includes('team lead')) {
+            passed = true;
+            evidence = "Engineering management experience found";
+          }
+          break;
+        case 3: // Bachelor's degree
+          if (resumeLower.includes('bachelor') || resumeLower.includes('b.s.') || resumeLower.includes('computer science')) {
+            passed = true;
+            evidence = "Bachelor's degree mentioned";
+          }
+          break;
+        case 4: // US work authorization
+          if (resumeLower.includes('authorized') || resumeLower.includes('citizen') || resumeLower.includes('green card')) {
+            passed = true;
+            evidence = "Work authorization mentioned";
+          } else {
+            passed = true; // Assume yes unless explicitly stated otherwise
+            evidence = "Assumed authorized (not explicitly stated)";
+          }
+          break;
+        case 5: // Kubernetes/Docker
+          const hasK8s = resumeLower.includes('kubernetes') || resumeLower.includes('k8s');
+          const hasDocker = resumeLower.includes('docker');
+          passed = hasK8s && hasDocker;
+          evidence = hasK8s && hasDocker ? "Both Kubernetes and Docker experience found" : 
+                    hasK8s ? "Kubernetes found but no Docker mentioned" :
+                    hasDocker ? "Docker found but no Kubernetes mentioned" : "Neither Kubernetes nor Docker found";
+          break;
+      }
+
+      results[filter.id] = { passed, evidence };
+      if (!passed) allPassed = false;
+    });
+
+    setBinaryResults(results);
+    return allPassed;
+  };
+
+  // Calculate weighted score
+  const calculateWeightedScore = () => {
+    let totalScore = 0;
+    evaluationCriteria.forEach(criterion => {
+      const score = scores[criterion.id] || 1;
+      const multipliers = { 5: 1.0, 4: 0.85, 3: 0.7, 2: 0.5, 1: 0.0 };
+      totalScore += (multipliers[score] * criterion.weight);
+    });
+    return (totalScore / 100) * 5; // Convert to 5.0 scale
+  };
+
+  // Generate final evaluation
+  const generateFinalEvaluation = () => {
+    const weightedScore = calculateWeightedScore();
+    const binaryPassed = Object.values(binaryResults).every(result => result.passed);
+    
+    let verdict, alignment, rationale;
+    
+    if (!binaryPassed) {
+      verdict = "Reject - Failed Binary Requirements";
+      alignment = "Disqualified";
+      rationale = "Candidate failed one or more non-negotiable requirements";
+    } else {
+      if (weightedScore >= 4.5) {
+        verdict = "Strong Candidate - Advance to Final Interview";
+        alignment = "Perfectly Aligned";
+      } else if (weightedScore >= 4.2) {
+        verdict = "Qualified - Advance to Technical Interview";
+        alignment = "Perfectly Aligned";
+      } else if (weightedScore >= 3.8) {
+        verdict = "Qualified with Gaps - Advance with Caution";
+        alignment = "Slightly Underqualified";
+      } else if (weightedScore >= 3.5) {
+        verdict = "Needs Additional Screening";
+        alignment = "Underqualified";
+      } else {
+        verdict = "Reject - Insufficient Fit";
+        alignment = "Underqualified";
+      }
+      
+      rationale = `Candidate scored ${weightedScore.toFixed(2)}/5.0 on weighted criteria assessment`;
+    }
+
+    const evaluation = {
+      candidateName: candidateData.name,
+      currentTitle: candidateData.currentTitle,
+      binaryPassed,
+      weightedScore: binaryPassed ? weightedScore : null,
+      verdict,
+      alignment,
+      rationale,
+      topStrengths: getTopStrengths(),
+      redFlags: getRedFlags(),
+      timestamp: new Date().toISOString()
+    };
+
+    setFinalEvaluation(evaluation);
+    setCurrentStep(6);
+  };
+
+  const getTopStrengths = () => {
+    return evaluationCriteria
+      .filter(criterion => scores[criterion.id] >= 4)
+      .sort((a, b) => (scores[b.id] * b.weight) - (scores[a.id] * a.weight))
+      .slice(0, 3)
+      .map(criterion => ({
+        name: criterion.name,
+        score: scores[criterion.id],
+        weight: criterion.weight
+      }));
+  };
+
+  const getRedFlags = () => {
+    const flags = [];
+    evaluationCriteria.forEach(criterion => {
+      if (scores[criterion.id] <= 2) {
+        flags.push(`Low score in ${criterion.name}`);
+      }
+    });
+    
+    Object.entries(binaryResults).forEach(([filterId, result]) => {
+      if (!result.passed) {
+        const filter = binaryFilters.find(f => f.id == filterId);
+        flags.push(`Failed: ${filter.criterion}`);
+      }
+    });
+    
+    return flags;
+  };
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const resetEvaluation = () => {
+    setCurrentStep(1);
+    setJobData({ description: '', notes: '', title: '' });
+    setBinaryFilters([]);
+    setEvaluationCriteria([]);
+    setCandidateData({ name: '', currentTitle: '', resume: '' });
+    setBinaryResults({});
+    setScores({});
+    setFinalEvaluation(null);
+  };
+
+  const loadSampleData = () => {
+    setJobData({
+      title: 'Senior Software Engineering Manager',
+      description: sampleJobDescription,
+      notes: sampleNotes
+    });
+  };
+
+  const loadSampleCandidate = () => {
+    setCandidateData({
+      name: 'Sarah Chen, PMP',
+      currentTitle: 'Senior Engineering Manager — TechCorp Inc.',
+      resume: `SARAH CHEN, PMP
+Senior Engineering Manager | 12+ Years Experience
+
+EXPERIENCE:
+Senior Engineering Manager | TechCorp Inc. (2019-Present)
+• Lead a team of 15 engineers across 3 product lines
+• Managed $2.5M annual engineering budget
+• Implemented DevOps practices, reducing deployment time by 60%
+• Led microservices migration from legacy monolith architecture
+• Extensive experience with AWS, Kubernetes, and Docker containers
+
+Software Engineering Manager | StartupXYZ (2016-2019)
+• Built and managed engineering team from 3 to 12 engineers
+• Architected cloud-native platform serving 100K+ users
+• Implemented CI/CD pipelines using Jenkins and GitLab
+
+Senior Software Engineer | BigTech Corp (2012-2016)
+• Full-stack development using Java, React, and Python
+• Led cross-functional projects with product and design teams
+• Mentored 5+ junior engineers
+
+EDUCATION:
+Bachelor of Science in Computer Science | Stanford University (2012)
+Master of Business Administration | UC Berkeley (2018)
+
+CERTIFICATIONS:
+• Project Management Professional (PMP) - 2020
+• AWS Solutions Architect - 2019
+• Certified Kubernetes Administrator (CKA) - 2021
+
+AUTHORIZATION:
+US Citizen, authorized to work without sponsorship`
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Recruitment Evaluation System</h1>
+              <p className="text-gray-600 mt-2">AI-powered candidate assessment with binary filters and weighted scoring</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={resetEvaluation}
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Reset
+              </button>
+              <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                <Save size={16} />
+                Save Progress
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+                    isCompleted ? 'bg-green-500 text-white' : 
+                    isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {isCompleted ? <CheckCircle size={20} /> : <Icon size={20} />}
+                  </div>
+                  <div className="ml-3">
+                    <p className={`text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-900'}`}>
+                      {step.title}
+                    </p>
+                  </div>
+                  {index < steps.length - 1 && (
+                    <ChevronRight className="mx-4 text-gray-400" size={20} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* Step 1: Job Setup */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Step 1: Job Description & Notes</h2>
+                <button
+                  onClick={loadSampleData}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Load Sample Data
+                </button>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Job Title
+                  </label>
+                  <input
+                    type="text"
+                    value={jobData.title}
+                    onChange={(e) => setJobData({...jobData, title: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Senior Software Engineering Manager"
+                  />
+                </div>
+                <div></div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Job Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={jobData.description}
+                  onChange={(e) => setJobData({...jobData, description: e.target.value})}
+                  rows={12}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Paste the complete job description here..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Kickoff Notes & Additional Requirements (Optional)
+                </label>
+                <textarea
+                  value={jobData.notes}
+                  onChange={(e) => setJobData({...jobData, notes: e.target.value})}
+                  rows={6}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Add recruiter interpretations, hiring priorities, salary info, or additional requirements..."
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  disabled={!jobData.description.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  Next: Generate Framework <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Generate Framework */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Step 2: Generate Evaluation Framework</h2>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">What happens next:</h3>
+                <ul className="text-blue-800 space-y-1">
+                  <li>• AI will extract 5-7 binary requirements (hard disqualifiers)</li>
+                  <li>• Generate 10 custom weighted evaluation criteria</li>
+                  <li>• Create role-specific scoring guidelines</li>
+                  <li>• Set up the evaluation framework for this position</li>
+                </ul>
+              </div>
+
+              <div className="border border-gray-200 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-2">Job Title: {jobData.title}</h4>
+                <div className="text-sm text-gray-600">
+                  <p>Description: {jobData.description.slice(0, 200)}...</p>
+                  {jobData.notes && <p className="mt-2">Notes: {jobData.notes.slice(0, 150)}...</p>}
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Generating evaluation framework...</p>
+                  <p className="text-sm text-gray-500 mt-2">Analyzing job requirements and creating custom criteria</p>
+                </div>
+              ) : (
+                <div className="flex justify-center">
+                  <button
+                    onClick={generateEvaluationFramework}
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg transition-colors flex items-center gap-2 text-lg"
+                  >
+                    <Target size={20} />
+                    Generate Evaluation Framework
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Candidate Input */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Step 3: Candidate Information</h2>
+                <button
+                  onClick={loadSampleCandidate}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  Load Sample Candidate
+                </button>
+              </div>
+
+              {/* Framework Summary */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-900 mb-2">✅ Evaluation Framework Generated</h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-green-800">
+                      <strong>Binary Filters:</strong> {binaryFilters.length} hard requirements
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-green-800">
+                      <strong>Weighted Criteria:</strong> {evaluationCriteria.length} evaluation dimensions
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Candidate Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={candidateData.name}
+                    onChange={(e) => setCandidateData({...candidateData, name: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Sarah Chen, PMP"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Job Title & Organization
+                  </label>
+                  <input
+                    type="text"
+                    value={candidateData.currentTitle}
+                    onChange={(e) => setCandidateData({...candidateData, currentTitle: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Senior Engineering Manager — TechCorp Inc."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Complete Resume/CV <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={candidateData.resume}
+                  onChange={(e) => setCandidateData({...candidateData, resume: e.target.value})}
+                  rows={16}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-mono"
+                  placeholder="Paste the candidate's complete resume here..."
+                />
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={() => {
+                    evaluateBinaryFilters(candidateData.resume, candidateData.name);
+                    setCurrentStep(4);
+                  }}
+                  disabled={!candidateData.name.trim() || !candidateData.resume.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  Next: Binary Evaluation <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Binary Evaluation */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Step 4: Binary Filter Evaluation</h2>
+              
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h3 className="font-semibold text-yellow-900 mb-2">⚡ Hard Requirements Check</h3>
+                <p className="text-yellow-800">These are non-negotiable minimum qualifications. If any fail, the candidate is automatically disqualified.</p>
+              </div>
+
+              {/* Candidate Header */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900">Evaluating: {candidateData.name}</h3>
+                <p className="text-gray-600">{candidateData.currentTitle}</p>
+              </div>
+
+              {/* Binary Filters Results */}
+              <div className="space-y-4">
+                {binaryFilters.map(filter => {
+                  const result = binaryResults[filter.id];
+                  return (
+                    <div key={filter.id} className={`border rounded-lg p-4 ${
+                      result?.passed ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'
+                    }`}>
+                      <div className="flex items-start gap-3">
+                        {result?.passed ? 
+                          <CheckCircle className="text-green-600 mt-1 flex-shrink-0" size={20} /> :
+                          <XCircle className="text-red-600 mt-1 flex-shrink-0" size={20} />
+                        }
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{filter.criterion}</h4>
+                          <p className="text-sm text-gray-600 mt-1">Source: {filter.source}</p>
+                          <div className={`mt-2 p-2 rounded text-sm ${
+                            result?.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            <strong>Evidence:</strong> {result?.evidence}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Binary Result Summary */}
+              <div className={`border-2 rounded-lg p-4 ${
+                Object.values(binaryResults).every(r => r.passed) ? 
+                'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'
+              }`}>
+                <div className="flex items-center gap-3">
+                  {Object.values(binaryResults).every(r => r.passed) ? 
+                    <CheckCircle className="text-green-600" size={24} /> :
+                    <XCircle className="text-red-600" size={24} />
+                  }
+                  <div>
+                    <h3 className="font-bold text-lg">
+                      {Object.values(binaryResults).every(r => r.passed) ? 
+                        '✅ PASSED - Proceeds to Detailed Scoring' : 
+                        '❌ DISQUALIFIED - Failed Binary Requirements'
+                      }
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {Object.values(binaryResults).every(r => r.passed) ? 
+                        'Candidate meets all non-negotiable requirements and can proceed to weighted evaluation.' :
+                        'Candidate failed one or more hard requirements and should be rejected.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Back
+                </button>
+                {Object.values(binaryResults).every(r => r.passed) ? (
+                  <button
+                    onClick={() => setCurrentStep(5)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    Next: Detailed Scoring <ChevronRight size={16} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      generateFinalEvaluation();
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    Generate Final Report <ChevronRight size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Detailed Scoring */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-900">Step 5: Weighted Criteria Scoring</h2>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">📊 Scoring Guidelines</h3>
+                <div className="grid md:grid-cols-5 gap-2 text-sm">
+                  <div className="bg-green-100 p-2 rounded text-center">
+                    <div className="font-bold text-green-800">5 - Perfect</div>
+                    <div className="text-green-700">100% weight</div>
+                  </div>
+                  <div className="bg-blue-100 p-2 rounded text-center">
+                    <div className="font-bold text-blue-800">4 - Strong</div>
+                    <div className="text-blue-700">85% weight</div>
+                  </div>
+                  <div className="bg-yellow-100 p-2 rounded text-center">
+                    <div className="font-bold text-yellow-800">3 - Moderate</div>
+                    <div className="text-yellow-700">70% weight</div>
+                  </div>
+                  <div className="bg-orange-100 p-2 rounded text-center">
+                    <div className="font-bold text-orange-800">2 - Weak</div>
+                    <div className="text-orange-700">50% weight</div>
+                  </div>
+                  <div className="bg-red-100 p-2 rounded text-center">
+                    <div className="font-bold text-red-800">1 - Missing</div>
+                    <div className="text-red-700">0% weight</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Scoring Interface */}
+              <div className="space-y-4">
+                {evaluationCriteria.map(criterion => (
+                  <div key={criterion.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900">{criterion.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{criterion.description}</p>
+                        <p className="text-xs text-blue-600 mt-1">Source: "{criterion.source}"</p>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+                          {criterion.weight}% weight
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map(score => (
+                        <button
+                          key={score}
+                          onClick={() => setScores({...scores, [criterion.id]: score})}
+                          className={`flex-1 p-2 border rounded text-center transition-colors ${
+                            scores[criterion.id] === score ?
+                            score === 5 ? 'bg-green-500 text-white border-green-500' :
+                            score === 4 ? 'bg-blue-500 text-white border-blue-500' :
+                            score === 3 ? 'bg-yellow-500 text-white border-yellow-500' :
+                            score === 2 ? 'bg-orange-500 text-white border-orange-500' :
+                            'bg-red-500 text-white border-red-500' :
+                            'bg-white border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="font-bold">{score}</div>
+                          <div className="text-xs">
+                            {score === 5 ? 'Perfect' : score === 4 ? 'Strong' : score === 3 ? 'Moderate' : score === 2 ? 'Weak' : 'Missing'}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Live Score Calculation */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Live Score Calculation</h3>
+                <div className="text-2xl font-bold text-blue-600">
+                  {calculateWeightedScore().toFixed(2)} / 5.00
+                </div>
+                <div className="text-sm text-gray-600">
+                  Criteria scored: {Object.keys(scores).length} / {evaluationCriteria.length}
+                </div>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setCurrentStep(4)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={generateFinalEvaluation}
+                  disabled={Object.keys(scores).length < evaluationCriteria.length}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  Generate Final Report <TrendingUp size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 6: Final Report */}
+          {currentStep === 6 && finalEvaluation && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Step 6: Final Evaluation Report</h2>
+                <div className="flex gap-3">
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <Download size={16} />
+                    Export PDF
+                  </button>
+                  <button
+                    onClick={resetEvaluation}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    New Evaluation
+                  </button>
+                </div>
+              </div>
+
+              {/* Headliner Block */}
+              <div className="border-2 border-gray-300 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2 border-b border-gray-300">
+                  <h3 className="font-bold text-gray-900">📋 HEADLINER EVALUATION BLOCK</h3>
+                </div>
+                <div className="p-4">
+                  <table className="w-full">
+                    <tbody className="divide-y divide-gray-200">
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900 w-1/3">Candidate Name</td>
+                        <td className="py-2 text-gray-900">{finalEvaluation.candidateName}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Current Job Title / Org</td>
+                        <td className="py-2 text-gray-900">{finalEvaluation.currentTitle}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Total Years of Relevant Experience</td>
+                        <td className="py-2 text-gray-900">12+ years (engineering & leadership)</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Binary Filter (3 hard gates)</td>
+                        <td className="py-2">
+                          {binaryFilters.slice(0, 3).map((filter, index) => {
+                            const result = binaryResults[filter.id];
+                            return (
+                              <div key={filter.id} className="mb-2">
+                                {index + 1}. {filter.criterion} — Evidence: {result?.evidence} → {result?.passed ? '✅' : '❌'}
+                              </div>
+                            );
+                          })}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Binary Result</td>
+                        <td className="py-2">
+                          {finalEvaluation.binaryPassed ? 
+                            <span className="text-green-600 font-semibold">✅ Passed — proceeds to rubric scoring</span> :
+                            <span className="text-red-600 font-semibold">❌ Disqualified — failed binary requirements</span>
+                          }
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Overall Weighted Score</td>
+                        <td className="py-2">
+                          {finalEvaluation.weightedScore ? 
+                            <span className="text-blue-600 font-semibold text-lg">{finalEvaluation.weightedScore.toFixed(2)} / 5.00</span> :
+                            <span className="text-gray-500">N/A — rubric not applied (failed binary gate)</span>
+                          }
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Verdict</td>
+                        <td className="py-2">
+                          <span className={`font-semibold ${
+                            finalEvaluation.verdict.includes('Strong') ? 'text-green-600' :
+                            finalEvaluation.verdict.includes('Qualified') ? 'text-blue-600' :
+                            finalEvaluation.verdict.includes('Reject') ? 'text-red-600' : 'text-yellow-600'
+                          }`}>
+                            {finalEvaluation.verdict}
+                          </span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 font-bold text-gray-900">Qualification Alignment Meter</td>
+                        <td className="py-2">
+                          <span className={`font-semibold ${
+                            finalEvaluation.alignment === 'Perfectly Aligned' ? 'text-green-600' :
+                            finalEvaluation.alignment === 'Slightly Overqualified' ? 'text-blue-600' :
+                            finalEvaluation.alignment === 'Slightly Underqualified' ? 'text-yellow-600' :
+                            'text-red-600'
+                          }`}>
+                            {finalEvaluation.alignment}
+                          </span> — {finalEvaluation.rationale}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="font-semibold text-blue-900">Concise Rationale (1 sentence):</p>
+                    <p className="text-blue-800">{finalEvaluation.rationale}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Analysis */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Top Strengths */}
+                <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                  <h3 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                    <CheckCircle size={20} />
+                    Top Strengths
+                  </h3>
+                  {finalEvaluation.topStrengths.length > 0 ? (
+                    <div className="space-y-2">
+                      {finalEvaluation.topStrengths.map((strength, index) => (
+                        <div key={index} className="bg-white p-2 rounded border border-green-200">
+                          <div className="font-medium text-green-900">{strength.name}</div>
+                          <div className="text-sm text-green-700">
+                            Score: {strength.score}/5 • Weight: {strength.weight}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-green-700">No significant strengths identified</p>
+                  )}
+                </div>
+
+                {/* Red Flags */}
+                <div className="border border-red-200 rounded-lg p-4 bg-red-50">
+                  <h3 className="font-bold text-red-900 mb-3 flex items-center gap-2">
+                    <AlertTriangle size={20} />
+                    Red Flags & Concerns
+                  </h3>
+                  {finalEvaluation.redFlags.length > 0 ? (
+                    <div className="space-y-2">
+                      {finalEvaluation.redFlags.map((flag, index) => (
+                        <div key={index} className="bg-white p-2 rounded border border-red-200">
+                          <div className="text-red-900">{flag}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-red-700">No significant red flags identified</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Detailed Scoring Breakdown */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => toggleSection('scoring')}
+                  className="w-full bg-gray-50 px-4 py-3 text-left font-semibold text-gray-900 hover:bg-gray-100 transition-colors flex items-center justify-between"
+                >
+                  <span>📊 Detailed Scoring Breakdown</span>
+                  {expandedSections.scoring ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                </button>
+                {expandedSections.scoring && (
+                  <div className="p-4 space-y-3">
+                    {evaluationCriteria.map(criterion => {
+                      const score = scores[criterion.id];
+                      const multipliers = { 5: 1.0, 4: 0.85, 3: 0.7, 2: 0.5, 1: 0.0 };
+                      const weightedValue = (multipliers[score] * criterion.weight).toFixed(1);
+                      
+                      return (
+                        <div key={criterion.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">{criterion.name}</div>
+                            <div className="text-sm text-gray-600">{criterion.weight}% weight</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold text-lg">{score}/5</div>
+                            <div className="text-sm text-gray-600">{weightedValue}% contribution</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-center pt-6">
+                <p className="text-sm text-gray-500">
+                  Evaluation completed on {new Date(finalEvaluation.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RecruitmentEvaluationApp;
